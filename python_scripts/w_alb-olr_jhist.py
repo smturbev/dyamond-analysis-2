@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 from utility import load, util
 
-models = ["FV3","ICON","SAM","NICAM"]
+models = ["ICON","SAM","NICAM"] # need to figure out fix for FV3's mismatched grid points
 regions = ["TWP","SHL","NAU"]
 
 for r in regions:
