@@ -12,6 +12,8 @@
         - get_pres(model, region)
         - get_temp(model, region)
         - get_qv(model, region)
+        - get_w(model, region)
+        - get_twc(model)
         - get_swd(model, region)
         - get_olr_alb(model, region)
         - load_tot_hydro(model, region)
@@ -968,6 +970,54 @@ def get_qv(model, region):
     else: raise Exception("invalide model: model = SAM, ICON, FV3, NICAM")
     print("\t returned water vapor mixing ratio with shape", qv.shape)
     return qv
+
+def get_w(model, region="TWP"):
+    """
+    Returns vertical velocity (m/s) as 3D xarray
+
+    Parameters:
+        model  (str) : model name  (NICAM, FV3, ICON, SAM)
+        region (str) : region name (TWP, NAU, SHL)
+    """
+    if INCLUDE_SHOCK: 
+        ind0=0
+    else:
+        ind0 = 8*2 # exclude first two days
+    if model.lower()=="nicam":
+        if region.lower()=="twp":
+            w = xr.open_dataset(ap.TWP_NICAM_W)["ms_w"][ind0:]
+        elif region.lower()=="shl":
+            w = xr.open_dataset(ap.SHL_NICAM_W)["ms_w"][ind0:]
+        elif region.lower()=="nau":
+            w = xr.open_dataset(ap.NAU_NICAM_W)["ms_w"][ind0:]
+        else: raise Exception("region not valid, try SHL, NAU, or TWP")
+    elif model.lower()=="fv3":
+        if region.lower()=="twp":
+            w = xr.open_dataset(ap.TWP_FV3_W)["w"][ind0:]
+        elif region.lower()=="shl":
+            w = xr.open_dataset(ap.SHL_FV3_W)["w"][ind0:]
+        elif region.lower()=="nau":
+            w = xr.open_dataset(ap.NAU_FV3_W)["w"][ind0:]
+        else: raise Exception("region not valid, try SHL, NAU, or TWP")
+    elif model.lower()=="icon":
+        if region.lower()=="twp":
+            w = xr.open_dataset(ap.TWP_ICON_W)["NEW"][ind0:]
+        elif region.lower()=="shl":
+            w = xr.open_dataset(ap.SHL_ICON_W)["NEW"]
+        elif region.lower()=="nau":
+            w = xr.open_dataset(ap.NAU_ICON_W)["W"][ind0:]
+        else: raise Exception("region not valid, try SHL, NAU, or TWP")
+    elif model.lower()=="sam":
+        if region.lower()=="twp":
+            w = (xr.open_dataset(ap.TWP_SAM_W)["W"])[ind0:,:]
+        elif region.lower()=="shl":
+            w = (xr.open_dataset(ap.SHL_SAM_W)["W"])[ind0:,:]
+        elif region.lower()=="nau":
+            w = (xr.open_dataset(ap.NAU_SAM_W)["W"])[ind0:,:]
+        else: raise Exception("try valid region (SHL, NAU, TWP)")
+    else: raise Exception("invalide model: model = SAM, ICON, FV3, NICAM")
+    print("\t returned water vapor mixing ratio with shape", w.shape)
+    return w
 
 def get_twc(model, region):
     """Returns total water content in kg/m3 for model and region given.
