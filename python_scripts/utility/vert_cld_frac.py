@@ -121,11 +121,6 @@ def get_cld_frac(model, region, ice_only=True, q=None):
             model_frac = np.nansum(model_frac,axis=(0,2,3))/model_no
         del model_no
         model_z = load.get_levels(model, region)
-        if model=="FV3":
-            model_z = np.nanmean(model_z, axis=0)
-        if model=="ICON":
-            model_z = np.nanmean(model_z, axis=(1))[14:]
-            print("ICON z", model_z.shape, model_z)
         print("\treturning model cld frac and z for",model, region)
         return (model_frac, model_z)
     return
@@ -182,7 +177,7 @@ def plot_vert_cld_frac(region, ax=None, ice_only=True, savename=None, fs=18):
     ax.set_ylim([0,20])
     ax.set_xlim([-0.03,0.83]) #83
     ax.set_ylabel("Height (km)",fontsize=fs)
-    ax.set_title('Cloud Occurrence, %s'%(region), fontsize=fs)
+    ax.set_title(region, fontsize=fs)
     ax.tick_params(labelsize=fs-2)
     ax.grid()
     if ax is None:
@@ -203,7 +198,7 @@ def plot_shl_twp_nau_cld_frac(fs=22, savename=None):
     Returns:
         - None
     """
-    fig, [axs, axt, axn] = plt.subplots(1,3,figsize=(20,6),sharey=True,sharex=True)
+    fig, [axs, axt, axn] = plt.subplots(1,3,figsize=(18,7),sharey=True,sharex=True)
     axs = plot_vert_cld_frac("SHL", ax=axs)
     axt = plot_vert_cld_frac("TWP", ax=axt)
     axn = plot_vert_cld_frac("NAU", ax=axn)
@@ -213,22 +208,33 @@ def plot_shl_twp_nau_cld_frac(fs=22, savename=None):
     axs.legend().remove()
     axt.legend().remove()
     axn.legend().remove()
-    new_label = [None]*len(ls)
+    new_label = []
+    new_ln = []
+    new_ls = []
+    new_lt = []
     fig.subplots_adjust(right=0.95)
     for i,l in enumerate(ls):
-        new_label[i] = l.split(")")[0][:-1] + ", " + lt[i].split("(")[-1][:-2] + ", " + ln[i].split("(")[-1][:-2]+")"
+        new_label.append(l.split(" ")[0]) # l.split(")")[0][:-1] + ", " + lt[i].split("(")[-1][:-2] + ", " + ln[i].split("(")[-1][:-2]+")"
+        new_ls.append(ls[i].split("(")[-1][:-1])
+        new_lt.append(lt[i].split("(")[-1][:-1])
+        new_ln.append(ln[i].split("(")[-1][:-1])
     new_label[-1]="TTL"
-    fig.legend(hs,new_label,loc=7,bbox_to_anchor=(1.07,0.4),fontsize=fs-10)
+    fig_legend = axt.legend(hs, new_label, loc=9, bbox_to_anchor=(0.5,-0.1), fontsize=fs-4, ncol=7)
+    axs.legend = axs.legend(hs[:-1], new_ls[:-1], loc="lower right", fontsize=fs-4)
+    axt.legend = axt.legend(hs[:-1], new_lt[:-1], loc="lower right", fontsize=fs-4)
+    axn.legend = axn.legend(hs[:-1], new_ln[:-1], loc="lower right", fontsize=fs-4)
+    axt.add_artist(fig_legend)
+
     axt.set_ylabel("")
     axn.set_ylabel("")
-    axs.annotate("(a)", xy=(0.7, 18.32), xycoords="data", fontsize=fs, weight="bold")
-    axt.annotate("(b)", xy=(0.7, 18.32), xycoords="data", fontsize=fs, weight="bold")
-    axn.annotate("(c)", xy=(0.7, 18.32), xycoords="data", fontsize=fs, weight="bold")
+    axs.annotate("(a)", xy=(-0.1,  1.1), xycoords="axes fraction", fontsize=fs, weight="bold")
+    axt.annotate("(b)", xy=(-0.1,  1.1), xycoords="axes fraction", fontsize=fs, weight="bold")
+    axn.annotate("(c)", xy=(-0.1,  1.1), xycoords="axes fraction", fontsize=fs, weight="bold")
     if savename is None: 
-        plt.savefig("../plots/fig09_vert_cld_frac.png", dpi=200)
-        print("saved as ../plots/fig09_vert_cld_frac.png")
+        plt.savefig("../plots/fig_vert_cld_frac.png", dpi=200, bbox_inches="tight", pad_inches=1)
+        print("saved as ../plots/fig_vert_cld_frac.png")
     else: 
-        plt.savefig(savename, dpi=200)
+        plt.savefig(savename, dpi=200, bbox_inches="tight", pad_inches=1)
         print("saved as %s"%(savename))
     plt.close()
 

@@ -12,10 +12,9 @@
         - get_pres(model, region)
         - get_temp(model, region)
         - get_qv(model, region)
-        - get_w(model, region)
-        - get_twc(model)
         - get_swd(model, region)
         - get_olr_alb(model, region)
+        - get_clearskyolr(modek, region)
         - load_tot_hydro(model, region)
         - load_frozen(model, region, ice_only=False)
 """
@@ -701,9 +700,12 @@ def get_olr_alb(model, region):
             olr = reshape.reshape("ATHB_T", rad, dim=2)
             swu = reshape.reshape("ASOU_T", rad, dim=2)
             swn = reshape.reshape("ASOB_T", rad, dim=2)
+            del rad
             olr_un = util.undomean(olr, xy=False)
             swu_un = util.undomean(swu, xy=False)
+            del swu
             swn_un = util.undomean(swn, xy=False)
+            del swn
             olr = xr.DataArray(olr_un, dims=["time","cell"], \
                                coords={"time":olr.t.values,\
                                        "cell":olr.cell})
@@ -739,6 +741,7 @@ def get_olr_alb(model, region):
             alb = swu/swd
         else: 
             raise Exception("Region not supported. Try 'TWP', 'NAU', 'SHL'.")
+        alb = alb.where((alb<1)&(alb>0))
         alb = alb[11::12]
         olr = olr[11::12]
         alb = alb[ind0:]
@@ -782,6 +785,78 @@ def get_olr_alb(model, region):
         print("... returning olr and albedo", olr.shape, alb.shape, "...")
     else: raise Exception("Model not supported at this time (try 'NICAM', 'FV3', 'ICON', 'SAM')")
     return olr, alb
+
+def get_clearskyolr(model, region, fwp=None, lwp=None, thres=0.1):
+    """returns clear sky albedo for each grid point.
+    
+        thres = threshold for clear sky fwp in g/m2
+        fwp = frozen water path in g/m2"""
+    if INCLUDE_SHOCK: 
+        ind0=0
+    else:
+        ind0 = 96*2 # exclude first two days
+    if fwp is None:
+        fwp = get_iwp(model, region, ice_only=False)
+        fwp = fwp[11::12]
+    if lwp is None: 
+        lwp = get_lwp(model, region, rain=False)
+        lwp = lwp[11::12]
+    if model.lower()=="nicam":
+        if region.lower()=="twp":
+            olrcs = xr.open_dataset(ap.TWP_NICAM_OLR_CS)["ss_lwu_toa_c"][ind0:].values[11::12]
+        elif region.lower()=="shl":
+            olr, _ = get_olr_alb(model, region)
+            olrcs = np.where((fwp<thres)&(lwp<thres), olr, np.nan)
+            # check if there are nan values and replace with latitute avg
+            # olrcs_lat = np.nanmean(np.where((fwp<thres)&(lwp<thres), olr, np.nan), axis=(0,3))
+            # olrcs = np.where(np.isnan(olrcs), olrcs_lat[:,:,np.newaxis], olrcs)
+        elif region.lower()=="nau":
+            olrcs = xr.open_dataset(ap.NAU_NICAM_OLR_CS)["ss_lwu_toa_c"][ind0:].values[11::12]
+        else: raise Exception("region not defined", region)
+    else:
+        olr, _ = get_olr_alb(model, region)
+        olrcs = np.where((fwp+lwp<thres), olr, np.nan)
+        # check if there are nan values and replace with latitute avg
+        # if model.lower()!="icon": # icon doesn't have lat-lon info
+        #     olrcs_lat = np.nanmean(np.where((fwp+lwp<thres), olr, np.nan), axis=(0,2))
+        #     olrcs = np.where(np.isnan(olrcs), olrcs_lat[:,np.newaxis], olrcs)
+    return olrcs
+
+def get_clearskyalb(model, region, fwp=None, lwp=None, thres=0.1):
+    """Returns clear sky albedo for each grid point.
+    
+        thres = threshold for clear sky fwp in g/m2
+        fwp = frozen water path in g/m2"""
+    if fwp is None:
+        fwp = get_iwp(model, region, ice_only=False)
+        fwp = fwp[11::12]
+    if lwp is None: 
+        lwp = get_lwp(model, region, rain=False)
+        lwp = lwp[11::12]
+    _, alb = get_olr_alb(model, region)
+    time = np.arange(3,alb.shape[0]*3+3,3)%24
+    if model.lower()=="nicam":
+        time = time[:, np.newaxis, np.newaxis, np.newaxis]
+    elif model.lower()=="icon":
+        time = time[:, np.newaxis]
+    else:
+        time = np.array(time)[:, np.newaxis, np.newaxis]
+    if region.lower()=="twp":
+        alb = alb.where(time>=20)
+    elif region.lower()=="nau":
+        alb = alb.where((time>=22)|(time<=2))
+    else:
+        alb = alb.where((time>=11)&(time<=15))
+    cs = np.where((fwp+lwp<thres), alb, np.nan)
+    # check if there are nan values and replace with latitute avg
+    # if model.lower()!="icon": # icon doesn't have lat-lon info
+    #     cs_lat = np.nanmean(np.where((fwp+lwp<thres), alb, np.nan), axis=(0,-1))
+    #     print(cs_lat.shape, cs.shape)
+    #     if model.lower()=="nicam":
+    #         cs = np.where(np.isnan(cs), cs_lat[:,:,np.newaxis], cs)
+    #     else:
+    #         cs = np.where(np.isnan(cs), cs_lat[:,np.newaxis], cs)
+    return cs
 
 ### ------ 3D ----- ###
 def get_levels(model, region="TWP"):
@@ -971,54 +1046,6 @@ def get_qv(model, region):
     print("\t returned water vapor mixing ratio with shape", qv.shape)
     return qv
 
-def get_w(model, region="TWP"):
-    """
-    Returns vertical velocity (m/s) as 3D xarray
-
-    Parameters:
-        model  (str) : model name  (NICAM, FV3, ICON, SAM)
-        region (str) : region name (TWP, NAU, SHL)
-    """
-    if INCLUDE_SHOCK: 
-        ind0=0
-    else:
-        ind0 = 8*2 # exclude first two days
-    if model.lower()=="nicam":
-        if region.lower()=="twp":
-            w = xr.open_dataset(ap.TWP_NICAM_W)["ms_w"][ind0:]
-        elif region.lower()=="shl":
-            w = xr.open_dataset(ap.SHL_NICAM_W)["ms_w"][ind0:]
-        elif region.lower()=="nau":
-            w = xr.open_dataset(ap.NAU_NICAM_W)["ms_w"][ind0:]
-        else: raise Exception("region not valid, try SHL, NAU, or TWP")
-    elif model.lower()=="fv3":
-        if region.lower()=="twp":
-            w = xr.open_dataset(ap.TWP_FV3_W)["w"][ind0:]
-        elif region.lower()=="shl":
-            w = xr.open_dataset(ap.SHL_FV3_W)["w"][ind0:]
-        elif region.lower()=="nau":
-            w = xr.open_dataset(ap.NAU_FV3_W)["w"][ind0:]
-        else: raise Exception("region not valid, try SHL, NAU, or TWP")
-    elif model.lower()=="icon":
-        if region.lower()=="twp":
-            w = xr.open_dataset(ap.TWP_ICON_W)["NEW"][ind0:]
-        elif region.lower()=="shl":
-            w = xr.open_dataset(ap.SHL_ICON_W)["NEW"]
-        elif region.lower()=="nau":
-            w = xr.open_dataset(ap.NAU_ICON_W)["W"][ind0:]
-        else: raise Exception("region not valid, try SHL, NAU, or TWP")
-    elif model.lower()=="sam":
-        if region.lower()=="twp":
-            w = (xr.open_dataset(ap.TWP_SAM_W)["W"])[ind0:,:]
-        elif region.lower()=="shl":
-            w = (xr.open_dataset(ap.SHL_SAM_W)["W"])[ind0:,:]
-        elif region.lower()=="nau":
-            w = (xr.open_dataset(ap.NAU_SAM_W)["W"])[ind0:,:]
-        else: raise Exception("try valid region (SHL, NAU, TWP)")
-    else: raise Exception("invalide model: model = SAM, ICON, FV3, NICAM")
-    print("\t returned water vapor mixing ratio with shape", w.shape)
-    return w
-
 def get_twc(model, region):
     """Returns total water content in kg/m3 for model and region given.
     
@@ -1053,7 +1080,6 @@ def load_tot_hydro(model, region, ice_only=True):
             Sahel - Niamey or Nauru
         region = string of 'FV3', 'ICON', 'SAM', or 'NICAM' (five of the DYAMOND models)
     """
-    st = time.time()
     if INCLUDE_SHOCK: 
         ind0=0
     else:
@@ -1182,19 +1208,20 @@ def load_tot_hydro1x1(model, region, return_ind=False, iceliq_only=True, exclude
         lon0 = np.argmin(abs(qi.grid_xt.values-lon0))
         lon1 = np.argmin(abs(qi.grid_xt.values-lon1))
         print("   time, lev, lat, lon = dims: ",(qi.dims))
-        qi = qi[:,:,lat0:lat1,lon0:lon1]
+        qi = qi[ind0:,:,lat0:lat1,lon0:lon1]
         print("Getting all hydrometeors for FV3 TWP:")
         ql = load_liq(model, region, rain=False).values[:,:,lat0:lat1,lon0:lon1]
         print("... opened qi and ql (%s s elapsed)..."%(time.time()-st))
         q = qi.values + ql
-        z = np.nanmean(get_levels(model, region), axis=0)
+        z = get_levels(model, region)
         print("... added qi + ql (%s s elapsed)..."%(time.time()-st))
+        print(q.shape, z.shape, qi.time.shape)
         qxr = xr.DataArray(q, dims=['time','lev','lat','lon'], 
                            coords={'time':qi.time, 'lev':z, 'lat':qi.grid_yt.values, 'lon':qi.grid_xt.values})
         if return_ind:
-            return qxr[ind0:], (lat0,lat1,lon0,lon1)
+            return qxr, (lat0,lat1,lon0,lon1)
         else:
-            return qxr[ind0:]
+            return qxr
     elif model.lower()=="icon": #ICON
         print("Getting ice...")
         qi = load_frozen(model, region, ice_only=True)

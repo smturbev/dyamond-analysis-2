@@ -9,9 +9,11 @@ import json
 
 # Color scheme from JNUG
 COLOR_JSON = "/home/disk/eos15/jnug/dyamond_colors.json"
+
 def js_r(filename):
     with open(filename) as f_in:
         return(json.load(f_in))
+
 COLORS = js_r(COLOR_JSON)
 
 # Set up Home Directory as root of where all dyamond data is stored
@@ -297,7 +299,7 @@ SHL_ICON_QL = ICON + "ICON-2.5km_new_qc_native_SHL.nc"
 SHL_ICON_QV = ICON + "ICON-2.5km_new_qv_native_SHL.nc"
 SHL_ICON_T  = SICON + "ICON_native_temp_SHL_reshaped.nc"
 SHL_ICON_P  = ICON + "ICON-2.5km_new_pres_native_SHL.nc"
-SHL_ICON_W  = SICON + "ICON-2.5km_w_native_SHL_reshaped.nc"
+SHL_ICON_W  = SICON + "ICON-2.5km_w_native_SHL.nc"
 SHL_ICON_Z  = ICON + "ICON_vlevs_SHL.nc" #TODO: SELLONLATBOX FROM MISTRAL
 SHL_ICON_AVG_QI = SAVG + ""
 SHL_ICON_AVG_QL = SAVG + ""
