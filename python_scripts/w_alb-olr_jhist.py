@@ -5,12 +5,13 @@ import matplotlib.pyplot as plt
 
 from utility import load, util
 
-models = ["ICON","SAM","NICAM"] # need to figure out fix for FV3's mismatched grid points
-regions = ["TWP","SHL","NAU"]
+models = ["SAM","NICAM","ICON"] # need to figure out fix for FV3's mismatched grid points
+regions = ["SHL","NAU"] # done with TWP
 
 # %%
 for r in regions:
     for m in models:
+        print("STARTING "+m+" "+r)
         # load olr, alb, w, z
         olr, alb = load.get_olr_alb(m,r)
         w = load.get_w(m,r)
@@ -47,18 +48,21 @@ for r in regions:
                 alb_binned = np.where(w[:,ind14km]<=w_thres[1], alb, np.nan)
 
             print(w_string[i], np.nanmean(olr), np.nanmean(alb))
-            if (m=="NICAM") or (m=="SAM"):
-                time_array = w.time
+            if (m=="NICAM"):
+                time_array = w.time.dt.hour.values
             elif m=="ICON":
-                time_array = w.t
+                time_array = w.t.dt.hour.values
+            elif (m=="SAM"):
+                time_array = np.array(list(np.arange(0,24,3))*38)
             else:
                 raise Exception("model not defined",m)
             if r=="TWP":
-                time_mask = (time_array.dt.hour.values>=20)
+                time_mask = (time_array>=20)
             elif r=="NAU":
-                time_mask = (time_array.dt.hour.values>=22)or(time_array.dt.hour.values<=2)
+                time_mask = np.where((time_array>=22)|(time_array<=2), True, False)
             elif r=="SHL":
-                time_mask = (time_array.dt.hour.values>=11)or(time_array.dt.hour.values<=15)
+                print(time_array.shape, time_array[:5])
+                time_mask = np.where((time_array>=11)&(time_array<=15), True, False)
             else:
                 raise Exception("region not defined,", r)
             olr_binned = olr_binned[time_mask]
@@ -71,3 +75,5 @@ for r in regions:
                         w_string[i].lower().replace(" ","_")),
                         bbox_inches="tight",pad_inches=0.5)
             plt.show()
+
+# %%
