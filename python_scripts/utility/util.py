@@ -693,11 +693,14 @@ def tdatetime(t_ind):
 
     return tstr
 
-def tstring(t_ind):
+def tstring(t_hr):
     """returns t string form for animation title"""
-    t = t_ind
+    t = t_hr
     mo_yr = " August 2016 "
     day = int(t//24)+1
+    if day > 31:
+        day = day - 31
+        mo_yr = " September 2016"
     # hrs = t%24 #hours
     timeh = int(t%24) # hour hand
     if timeh<10:

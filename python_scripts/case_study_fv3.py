@@ -39,7 +39,7 @@ def plot_wp(t, wp, iwp, lwp, xlim=[None,None], ylim=[None,None], figsize=(10,4),
 
     ax[0].set_xlim(xlim)
     ax[0].set_ylim(ylim)
-    fig.suptitle("time step = "+str(t)+" "+(util.tstring((t*3)+48)))
+    fig.suptitle("time step = "+str(t)+" "+(util.tstring((t*0.25)+48)))
     if save:
         if DC:
             plt.savefig("../plots/fv3/case_study_"+region+"_f{0:03d}.png".format(t), bbox_inches="tight")
