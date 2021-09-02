@@ -21,3 +21,8 @@ directory hierarchy
 |- tables/
 ```
 
+Big questions:
+- What mechanisms drive cirrus maintenance and life time?
+- How do ice microphysics need to be improved? 
+
+
