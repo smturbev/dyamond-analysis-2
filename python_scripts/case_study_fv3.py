@@ -11,7 +11,7 @@ DC = False
 
 # %%
 # define methods
-def plot_wp(t, wp, iwp, lwp, xlim=[None,None], ylim=[None,None], figsize=(10,4), save=False):
+def plot_wp(t, iwp, lwp, xlim=[None,None], ylim=[None,None], figsize=(10,4), save=False):
     """Returns fig with 3 panels of total water path, frozen and liquid water paths"""
     fig, ax = plt.subplots(1,2, figsize=figsize, sharex=True, sharey=True)
 
@@ -59,35 +59,35 @@ twp = iwp + lwp
 # %%
 # deep convective event with total water path > thres g/m2
 # list all times with such events then plot them
-if DC:
-    thres = 60
-    twp_dc = twp.where(twp>=thres) # kg/m2 
-    times_dc = []
-    for t in range(len(twp.time)):
-        if (twp[t]>=thres).any():
-            times_dc.append(t)
-    print(len(times_dc))
-else:
-    thres = 200
-    times_ci = []
-    twp_ci = np.zeros(twp.shape)
-    for t in range(len(twp.time)):
-        twp_ci[t] = twp[t].where((twp[t]<thres)&(iwp[t].values>=1e-4)&(lwp[t]<1e-4)) # kg/m2 
-        if (~np.isnan(twp_ci[t])).any(): 
-            times_ci.append(t)
-    print(len(times_ci))
+# if DC:
+#     thres = 60
+#     twp_dc = twp.where(twp>=thres) # kg/m2 
+#     times_dc = []
+#     for t in range(len(twp.time)):
+#         if (twp[t]>=thres).any():
+#             times_dc.append(t)
+#     print(len(times_dc))
+# else:
+#     thres = 200
+#     times_ci = []
+#     twp_ci = np.zeros(twp.shape)
+#     for t in range(len(twp.time)):
+#         twp_ci[t] = twp[t].where((twp[t]<thres)&(iwp[t].values>=1e-4)&(lwp[t]<1e-4)) # kg/m2 
+#         if (~np.isnan(twp_ci[t])).any(): 
+#             times_ci.append(t)
+#     print(len(times_ci))
 # %%
 # plot twp,  iwp, lwp 
-if DC:
-    t = times_dc[0]
-    print(t)
-    plot_wp(t, twp_dc, iwp, lwp, save=True)
-    print("done")
-else:
-    t = times_ci[0]
-    print(t)
-    plot_wp(t, twp_ci, iwp, lwp, save=False)
-    print("done")
+# if DC:
+#     t = times_dc[0]
+#     print(t)
+#     plot_wp(t, twp_dc, iwp, lwp, save=True)
+#     print("done")
+# else:
+#     t = times_ci[0]
+#     print(t)
+#     plot_wp(t, twp_ci, iwp, lwp, save=False)
+#     print("done")
 
 # %%
 # time evolution & zoomed
@@ -95,7 +95,7 @@ print(115)
 for i in range(3500):
     print(i)
     if DC:
-        plot_wp(i, twp_dc, iwp, lwp, save=True)
+        plot_wp(i, iwp, lwp, save=True)
     else:
-        plot_wp(i, twp_ci, iwp, lwp, save=True)
+        plot_wp(i, iwp, lwp, save=True)
 # %%
