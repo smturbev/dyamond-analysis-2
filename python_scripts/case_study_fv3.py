@@ -5,7 +5,7 @@ import numpy as np
 from utility import load, load01deg, util
 
 model = "FV3"
-region = "TWP"
+region = "NAU"
 
 DC = False
 
@@ -92,7 +92,7 @@ twp = iwp + lwp
 # %%
 # time evolution & zoomed
 print(115)
-for i in range(3500):
+for i in range(3000):
     print(i)
     if DC:
         plot_wp(i, iwp, lwp, save=True)
