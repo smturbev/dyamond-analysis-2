@@ -1,5 +1,6 @@
-plots/fv3/fv3_native_15min_TWP.mp4
+plots/fv3/*
 python_scripts/utility/*.pyc
 python_scripts/utility/__pycache__/
 python_scripts/utility/__pycache__/*
+plots/case_study_fv3/temp/*
 

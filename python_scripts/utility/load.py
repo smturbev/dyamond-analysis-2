@@ -1117,9 +1117,11 @@ def load_tot_hydro(model, region, ice_only=True):
                             coords={'time':qi.time, 'lev':qi.lev, 'lat':qi.lat, 'lon':qi.lon})
         return q_xr[ind0:]
     elif model.lower()=="fv3":
-        qi = load_frozen(model, region, ice_only=ice_only)
-        ql = load_liq(model, region, rain=ice_only)
+        qi = load_frozen(model, region, ice_only=ice_only).astype("float32")
+        ql = load_liq(model, region, rain=ice_only).values.astype("float32")
+        print("got qi and ql... adding...")
         q = qi.values + ql
+        print("sum completed, generating xarray...")
         qxr = xr.DataArray(q, dims=['time','pfull','grid_yt','grid_xt'], 
                             coords={'time':qi.time, 'pfull':qi.pfull, 'grid_yt':qi.grid_yt, 'grid_xt':qi.grid_xt})
         return qxr
