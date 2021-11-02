@@ -12,7 +12,7 @@ from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from utility import analysis_parameters as ap
 
 is_one_by_one = False
-t = 19
+t = 26
 greys = cm.get_cmap("gist_yarg", 28)
 model="FV3"
 #%%
@@ -40,7 +40,7 @@ print("Converted to g/m3")
 print(qn.shape, qn.time.values)
 #%%
 tstring = str(qn.time.values).split("T")[-1][:5]+" UTC "+str(qn.time.values).split("-")[2][:2]+" Aug 2016"
-
+print(tstring)
 if model=="FV3":
     z = load.get_levels(model, "TWP")
 else:
@@ -64,16 +64,16 @@ print("q shape, lat, lon", qn[:,:,:].shape, x3d.shape, z3d.shape)
 if is_one_by_one:
     xskip, yskip, zskip = 1, 1, 1
 else:
-    xskip, yskip, zskip = 4, 5, 1
+    xskip, yskip, zskip = 5, 4, 1
 in_cloud = (np.where(qn[::zskip,::xskip,::yskip] > 5e-4, True, False)).flatten()
 qn = qn[::zskip,::xskip,::yskip].values.flatten()[in_cloud]
 print("got incloud and flattened array.\nMaking plot...")
 # plt.rcParams["image.cmap"] = new_cmap
-
+# %%
 fs = 14
-fig = plt.figure(figsize=(15,7))
+fig = plt.figure(figsize=(10,7))
 ax = fig.add_subplot(111, projection="3d")
-ax.view_init(30,-255) #-220
+ax.view_init(30,30) #-220
 sc = ax.scatter((x3d[::zskip,::xskip,::yskip]).flatten()[in_cloud], \
                 (y3d[::zskip,::xskip,::yskip]).flatten()[in_cloud], \
                 (z3d[::zskip,::xskip,::yskip]).flatten()[in_cloud]/1000,\
@@ -91,6 +91,7 @@ ax.set_zlim(0,20)
 ax.set_ylabel("\nLongitude ($^\circ$E)", fontsize=fs)
 ax.set_xlabel("\nLatitude ($^\circ$N)", fontsize=fs)
 ax.set_zlabel("Height (km)", fontsize=fs)
+fig.suptitle(tstring, fontsize=fs)
 if is_one_by_one:
     ax.set_yticks(np.arange(147,148,0.2))
     ax.set_yticklabels([147,None,147.4,None,147.8,None])
@@ -107,7 +108,10 @@ cbar.ax.tick_params(labelsize=fs-2)
 if is_one_by_one:
     plt.savefig(f"../plots/fv3/cloud3d_{t}.png", transparent=False, dpi=200, bbox_inches="tight", pad_inches=0.2)
 else:
+    ax.set_xlim([-5,5])
+    ax.set_ylim([143,153])
     ax.invert_xaxis()
+    # ax.invert_yaxis()
     plt.savefig(f"../plots/fv3/cloud3d_10x10_long_{t}.png", transparent=False, dpi=200, bbox_inches="tight", pad_inches=0.2)
 plt.close()
 print("plot saved in ../plots/fv3/")

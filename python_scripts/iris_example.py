@@ -4,6 +4,7 @@ import iris.plot as iplt
 import iris.quickplot as qplt
 import iris
 import matplotlib.pyplot as plt
+from scipy.ndimage.measurements import label
 import xarray as xr
 import numpy as np
 import tobac
@@ -18,17 +19,20 @@ olr = load01deg.get_olr("FV3", "TWP")[96*2:960]
 olr_cube = olr.to_iris()
 
 # %%
-# t = 268
-for t in range(448,600,4):
-    plt.figure(figsize=(6,6))
-    qplt.pcolormesh(olr_cube[t,:,:], cmap="viridis_r",
-                vmin=80, vmax=300)
-    plt.gca().coastlines()
-    plt.xticks(np.arange(143,154,2))
-    plt.yticks(np.arange(-5,6,2))
-    plt.title(util.tstring(t*0.25))
-    plt.savefig(f"../plots/fv3/olr_cube_plot_{t}.png")
-    plt.show()
+iwp_cube = load01deg.get_iwp("FV3","TWP")[96*2:960].to_iris()
+
+# %%
+t = 268
+# for t in range(448,600,4):
+plt.figure(figsize=(6,6))
+qplt.pcolormesh(olr_cube[t,:,:], cmap="viridis_r",
+            vmin=80, vmax=300)
+plt.gca().coastlines()
+plt.xticks(np.arange(143,154,2))
+plt.yticks(np.arange(-5,6,2))
+plt.title(util.tstring(t*0.25))
+plt.savefig(f"../plots/fv3/olr_cube_plot_{t}.png")
+plt.show()
 
 # %%
 ## olr coord name change
@@ -48,7 +52,7 @@ if RUN:
     parameters_features['sigma_threshold']=0.5
     parameters_features['min_num']=4
     parameters_features['target']='minimum'
-    parameters_features['threshold']=np.linspace(125,250,4)
+    parameters_features['threshold']=[250,225,200,175,150]
     print("thresholds", parameters_features['threshold'])
 # %%
 ## Perform feature detection:
@@ -102,7 +106,7 @@ axis_extent=[143,153,-5,5]
 # %%
 # load saved track analysis
 if not(RUN):
-    Track = pd.read_hdf("../plots/fv3/Track.h5", "table")
+    Track    = pd.read_hdf("../plots/fv3/Track.h5", "table")
     Features = pd.read_hdf("../plots/fv3/Features.h5", "table")
     Mask_OLR = iris.load_cube("../plots/fv3/Mask_Segmentation_OLR.nc")
     Features_OLR = pd.read_hdf("../plots/fv3/Features_OLR.h5", "table")
@@ -133,16 +137,54 @@ animation_test_tobac=tobac.animation_mask_field(Track,Features,olr_cube,Mask_OLR
 
 # %%
 # Save animation to file:
-savefile_animation='../plots/fv3/Animation.mp4'
+savefile_animation='../plots/fv3/Animation_default.mp4'
 animation_test_tobac.save(savefile_animation,dpi=200)
 print(f'animation saved to {savefile_animation}')
 
 # %%
 # Lifetimes of tracked clouds:
 fig_lifetime,ax_lifetime=plt.subplots()
-tobac.plot_lifetime_histogram_bar(Track,axes=ax_lifetime,bin_edges=np.arange(0,200,20),density=False,width_bar=10)
-ax_lifetime.set_xlabel('lifetime (min)')
+tobac.plot_lifetime_histogram_bar(Track,axes=ax_lifetime,bin_edges=np.arange(0,1440,60),density=False,width_bar=60)
+ax_lifetime.set_xlabel('lifetime (hr)')
 ax_lifetime.set_ylabel('counts')
-plt.savefig("../plots/fv3/lifetime_histogram.png")
+ax_lifetime.set_xticks(np.arange(0,1441,60))
+ax_lifetime.set_xticklabels(range(0,25), rotation=30)
+plt.savefig(f"../plots/fv3/lifetime_histogram_default.png",facecolor='white', transparent=False)
+plt.show()
+# %%
+fig_area,ax_area=plt.subplots(1,1)
+tobac.area_histogram(Features,Mask_OLR,bin_edges=np.arange(0,30000,500),
+                   density=False,method_area=None,
+                   return_values=False,representative_area=False)
+ax_area.set_xlabel('Area (m)')
+ax_area.set_ylabel('counts')
+plt.savefig("../plots/fv3/area_histogram.png")
+print("done")
+plt.show()
+# %%
+track18 = Track[Track.cell==18]
+print(track18)
+#%%
+plt.subplots(1,1, figsize=(5,4))
+sc = plt.scatter(track18.longitude, track18.latitude, c=track18.frame, 
+            s=5, cmap="cividis")
+plt.title("cell=18, track path, life time = "+str(list(track18.time_cell)[-1]))
+plt.colorbar(sc, label="timesteps since "+str(list(track18.time)[0])[:-3]+" UTC")
+plt.xlim([143,153])
+plt.ylim([-5,5])
+plt.savefig("../plots/fv3/track18.jpg")
+plt.show()
+# %%
+track4475 = Track[Track.cell==4475]
+print(track4475)
+# %%
+plt.subplots(1,1, figsize=(5,4))
+sc = plt.scatter(track4475.longitude, track4475.latitude, c=track4475.frame, 
+            s=5, cmap="cividis")
+plt.title("cell=4475, track path, life time = "+str(list(track4475.time_cell)[-1]))
+plt.colorbar(sc, label="timesteps since "+str(list(track4475.time)[0])[:-3]+" UTC")
+plt.xlim([143,153])
+plt.ylim([-5,5])
+plt.savefig("../plots/fv3/track4475.jpg")
 plt.show()
 # %%
