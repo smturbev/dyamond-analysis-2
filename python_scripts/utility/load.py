@@ -446,11 +446,11 @@ def get_swd(model, region):
         ind0 = 96*2 # exclude first two days
     if model.lower()=="nicam":
         if region.lower()=="twp":
-            swd = xr.open_dataset(ap.TWP_NICAM_SWD)['ss_swd_toa'][ind0*2:]
+            swd = xr.open_dataset(ap.TWP_NICAM_SWD)['ss_swd_toa'][ind0:]
         elif region.lower()=="nau":
-            swd = xr.open_dataset(ap.NAU_NICAM_SWD)['ss_swd_toa'][ind0*2:]
+            swd = xr.open_dataset(ap.NAU_NICAM_SWD)['ss_swd_toa'][ind0:]
         elif region.lower()=="shl":
-            swd = xr.open_dataset(ap.SHL_NICAM_SWD)['ss_swd_toa'][ind0*2:]
+            swd = xr.open_dataset(ap.SHL_NICAM_SWD)['ss_swd_toa'][ind0:]
     elif model.lower()=="fv3":
         if region.lower()=="twp":
             swd = xr.open_dataset(ap.TWP_FV3_SWD)['fsdt'][ind0:]
