@@ -12,7 +12,7 @@ import pandas as pd
 
 import utility.analysis_parameters as ap
 from utility import load, load01deg, util
-RUN = True
+RUN = False
 thres = 1e-4
 
 # %%

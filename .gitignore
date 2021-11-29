@@ -3,4 +3,4 @@ python_scripts/utility/*.pyc
 python_scripts/utility/__pycache__/
 python_scripts/utility/__pycache__/*
 plots/case_study_fv3/temp/*
-
+plots/animation/*
